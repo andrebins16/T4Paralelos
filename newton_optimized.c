@@ -7,8 +7,8 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define LARGURA_BASE 8000
-#define ALTURA_BASE 8000
+#define LARGURA_BASE 7000
+#define ALTURA_BASE 7000
 #define MAX_ITERACOES 1000
 #define EPSILON 1e-6
 
@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    //Otimização (teste): Na maquina que estiver rodando o mestre, diminui em 1 o numero de threads. Garantindo que o mestre tenha um recurso dedicado
     // Descobre se esta na msm maquina do mestre
     char minha_maquina[MPI_MAX_PROCESSOR_NAME];
     char maquina_do_mestre[MPI_MAX_PROCESSOR_NAME];
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]) {
     //ESCRAVO
     else {
         int threads_ativas = (strcmp(minha_maquina, maquina_do_mestre) == 0) ? num_threads - 1 : num_threads; //se estiver na mesma maquina do mestre, usa num_threads -1
+        threads_ativas = (threads_ativas < 1) ? 1 : threads_ativas; // garante que tenha pelo menos 1 thread
         omp_set_num_threads(threads_ativas);
         printf("Rank %d em %s (mestre em %s): usando %d threads\n", rank, minha_maquina, maquina_do_mestre, threads_ativas);
 

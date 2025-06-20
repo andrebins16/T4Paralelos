@@ -6,8 +6,8 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define LARGURA_BASE 8000
-#define ALTURA_BASE 1000
+#define LARGURA_BASE 4000
+#define ALTURA_BASE 2000
 #define MAX_ITERACOES 1000
 #define EPSILON 1e-6
 
@@ -64,8 +64,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int largura = LARGURA_BASE * multiplicador_trabalho;
-    int altura = ALTURA_BASE;
+    //multiplicou a largura pelo numero de threads para balancear com o codigo mpi puro. dividiu a altura pelo mesmo motivo
+    //assim, cada trabalhador trabalha o mesmo nos dois problemas. (pois no hibrido, cada linha sera divida entre os n processos)
+    //sendo assim, aumenta n vezes o tamanho de cada linha
+    //para manter o tamanho do problema ainda, divide a altura por n tambem
+    int largura = LARGURA_BASE * multiplicador_trabalho * num_threads; 
+    int altura = ALTURA_BASE/num_threads;
 
     int rank, size;
     MPI_Init(&argc, &argv);

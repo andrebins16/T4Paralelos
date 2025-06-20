@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
+#include <string.h>
 #include <time.h>
 #include <mpi.h>
 #include <omp.h>
@@ -19,6 +20,7 @@
 #define TAG_TRABALHO 1
 #define TAG_RESULTADO 2
 #define TAG_TERMINO 3
+#define TAG_NOME_MESTRE 4
 
 void salvar_matriz(int **matriz, double tempo_execucao, int largura, int altura, const char *arquivo_saida) {
     FILE *fp = fopen(arquivo_saida, "w");
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
     //assim, cada trabalhador trabalha o mesmo nos dois problemas. (pois no hibrido, cada linha sera divida entre os n processos)
     //sendo assim, aumenta n vezes o tamanho de cada linha
     //para manter o tamanho do problema ainda, divide a altura por n tambem
-    int largura = LARGURA_BASE * multiplicador_trabalho * num_threads; 
+    int largura = LARGURA_BASE * multiplicador_trabalho * num_threads;
     int altura = ALTURA_BASE/num_threads;
 
     int rank, size;
@@ -76,7 +78,25 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    //MESTRE
+    // Descobre se esta na msm maquina do mestre
+    char minha_maquina[MPI_MAX_PROCESSOR_NAME];
+    char maquina_do_mestre[MPI_MAX_PROCESSOR_NAME];
+    int tam_nome;
+    MPI_Get_processor_name(minha_maquina, &tam_nome);
+
+    // mestre envia o próprio hostname a todos os outros
+    if (rank == 0) {
+        strcpy(maquina_do_mestre, minha_maquina);  // copia o próprio nome
+        for (int dest = 1; dest < size; dest++) {
+            MPI_Send(maquina_do_mestre, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, dest, TAG_NOME_MESTRE, MPI_COMM_WORLD);
+        }
+    }
+    // escravo recebe o nome da maquina do mestre
+    else {
+        MPI_Recv(maquina_do_mestre, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, 0, TAG_NOME_MESTRE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+
+    // MESTRE
     if (rank == 0) {
         printf("Execução paralela com %d processos pesados MPI, com %d threads OpenMP por processo. \n Total de processos = %d\n Multiplicador de trabalho = %d\n",
                size, num_threads, (size-1)*num_threads, multiplicador_trabalho);
@@ -130,7 +150,10 @@ int main(int argc, char *argv[]) {
     } 
     //ESCRAVO
     else {
-        omp_set_num_threads(num_threads);  // define o número de threads
+        int threads_ativas = (strcmp(minha_maquina, maquina_do_mestre) == 0) ? num_threads - 1 : num_threads; //se estiver na mesma maquina do mestre, usa num_threads -1
+        omp_set_num_threads(threads_ativas);
+        printf("Rank %d em %s (mestre em %s): usando %d threads\n", rank, minha_maquina, maquina_do_mestre, threads_ativas);
+
         //laço principal do escravo
         while (1) {
             int linha;

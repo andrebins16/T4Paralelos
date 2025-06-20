@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 
             double variavel_imaginaria = Y_MIN + (Y_MAX - Y_MIN) * linha / (altura - 1);
 
-            #pragma omp parallel for schedule(dynamic) // paralelismo com omp. atribuição dinamica
+            #pragma omp parallel for // paralelismo com omp
             for (int x = 0; x < largura; x++) {
                 double variavel_real = X_MIN + (X_MAX - X_MIN) * x / (largura - 1);
                 complex double z = variavel_real + variavel_imaginaria * I;

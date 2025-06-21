@@ -5,8 +5,8 @@
 #include <time.h>
 #include <mpi.h>
 
-#define LARGURA_BASE 7000
-#define ALTURA_BASE 7000
+#define LARGURA_BASE 4000
+#define ALTURA_BASE 4000
 #define MAX_ITERACOES 1000
 #define EPSILON 1e-6
 
